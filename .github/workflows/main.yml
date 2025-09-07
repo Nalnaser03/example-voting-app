@@ -29,7 +29,7 @@ jobs:
         password: ${{ secrets.VM_PASSWORD }}
         port: 22
         source: "image.tar"
-        target: "/home/azureuser"
+        target: "/home/gitbuild" 
 
     - name: Deploy on VM
       uses: appleboy/ssh-action@v1.0.3
@@ -39,7 +39,7 @@ jobs:
         password: ${{ secrets.VM_PASSWORD }}
         port: 22
         script: |
-          docker load -i /home/azureuser/image.tar
+          docker load -i/home/gitbuild/image.tar
           docker stop vote-container || true
           docker rm vote-container || true
           docker run -d -p 80:80 --name vote-container my-vote-app:latest
