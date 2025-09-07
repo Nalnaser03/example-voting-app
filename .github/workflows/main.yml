@@ -1,0 +1,45 @@
+name: Deploy Vote App to Azure VM
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build the Docker image
+      run: |
+        cd vote
+        docker build -t my-vote-app:latest .
+
+    - name: Save image to tar file
+      run: docker save -o image.tar my-vote-app:latest
+
+    - name: Copy image to VM
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.VM_IP }}
+        username: azureuser
+        password: ${{ secrets.VM_PASSWORD }}
+        port: 22
+        source: "image.tar"
+        target: "/home/azureuser"
+
+    - name: Deploy on VM
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VM_IP }}
+        username: azureuser
+        password: ${{ secrets.VM_PASSWORD }}
+        port: 22
+        script: |
+          docker load -i /home/azureuser/image.tar
+          docker stop vote-container || true
+          docker rm vote-container || true
+          docker run -d -p 80:80 --name vote-container my-vote-app:latest
